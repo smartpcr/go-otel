@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"githut.com/smartpcr/go-otel/pkg/ot"
+	"github.com/smartpcr/go-otel/pkg/ot"
 	"os"
 	"os/signal"
 )
