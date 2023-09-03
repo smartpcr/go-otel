@@ -1,4 +1,4 @@
-module githut.com/smartpcr/go-otel
+module github.com/smartpcr/go-otel
 
 go 1.21.0
 
