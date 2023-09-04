@@ -34,21 +34,22 @@ func main() {
 	logger.Infof("starting %s", ServiceName)
 
 	logger.Infof("registering tracing at %s", config.Receiver.Endpoint)
-	if err := ot.RegisterTracing(ctx, config.Receiver.Endpoint, ServiceName, logger); err != nil {
+	err := ot.RegisterTracing(ctx, config.Receiver.Endpoint, ServiceName, logger)
+	if err != nil {
 		panic(err)
 	}
+
+	ctx, span, startupLogger := ot.StartSpanLogger(ctx, "startup")
+	defer span.End()
+	span.AddEvent("test event")
+	startupLogger.Infof("test log")
 
 	logger.Infof("registering metrics at %s", config.Receiver.Endpoint)
 	metric, err := ot.RegisterOtelMetrics(ctx, config.Receiver.Endpoint, ServiceName)
 	if err != nil {
 		panic(err)
 	}
-	defer func(ctx context.Context) {
-		err := metric.Shutdown(ctx)
-		if err != nil {
-			panic(err)
-		}
-	}(ctx)
+
 	counter, err := metric.Meter("test").Int64Counter("test.counter")
 	if err != nil {
 		panic(err)

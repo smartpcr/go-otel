@@ -12,12 +12,13 @@ import (
 	resource2 "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.9.0"
 	"google.golang.org/grpc/credentials"
+	"log"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"time"
 )
 
-func RegisterPrometheusMetrics() error {
+func RegisterPrometheusMetrics(ctx context.Context) error {
 	exporter, err := prometheus.New(
 		prometheus.WithRegisterer(metrics.Registry.(*crprometheus.Registry)))
 	if err != nil {
@@ -25,6 +26,15 @@ func RegisterPrometheusMetrics() error {
 	}
 	meterProvider := metric.NewMeterProvider(metric.WithReader(exporter))
 	otel.SetMeterProvider(meterProvider)
+
+	go func() {
+		<-ctx.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := meterProvider.Shutdown(ctx); err != nil {
+			log.Fatalf("failed to shutdown opentelemetry metrics provider: %v", err)
+		}
+	}()
 
 	return nil
 }
@@ -54,6 +64,15 @@ func RegisterOtelMetrics(ctx context.Context, endpoint, serviceName string) (*me
 		metric.WithReader(metric.NewPeriodicReader(exporter, metric.WithInterval(30*time.Second))),
 	)
 	otel.SetMeterProvider(meterProvider)
+
+	go func() {
+		<-ctx.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := meterProvider.Shutdown(ctx); err != nil {
+			log.Fatalf("failed to shutdown opentelemetry metrics provider: %v", err)
+		}
+	}()
 
 	return meterProvider, nil
 }
