@@ -2,6 +2,7 @@ package ot
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -15,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"k8s.io/component-base/version"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 )
 
@@ -41,11 +44,20 @@ func RegisterTracing(ctx context.Context, endpoint, serviceName string, log *log
 	return nil
 }
 
-func StartSpanLogger(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span, *logrus.Entry) {
+func StartSpanLogger(ctx context.Context, opts ...trace.SpanStartOption) (context.Context, trace.Span, *logrus.Entry) {
 	tracer := &tracer{
 		Tracer: otel.Tracer(ServiceName),
 	}
-	ctx, span := tracer.startSpan(ctx, name, opts...)
+	callerFile, callerFunc, callerLine := getCaller()
+	opts = append(
+		opts,
+		trace.WithAttributes(
+			attribute.String("caller_file", callerFile),
+			attribute.String("caller_func", callerFunc),
+			attribute.Int("caller_line", callerLine),
+		),
+	)
+	ctx, span := tracer.startSpan(ctx, fmt.Sprintf("%s.%s", callerFile, callerFunc), opts...)
 	return ctx, span, logrus.WithContext(ctx)
 }
 
@@ -107,4 +119,18 @@ func ensureCorrelationId(ctx context.Context) (context.Context, string) {
 	}
 	newCorrId := uuid.New().String()
 	return context.WithValue(ctx, CorrelationIdKey, newCorrId), newCorrId
+}
+
+func getCaller() (fileName string, functionName string, lineNumber int) {
+	pc, file, line, ok := runtime.Caller(1)
+	if !ok {
+		fmt.Println("Error retrieving function info")
+		return
+	}
+
+	functionName = runtime.FuncForPC(pc).Name()
+	fileName = filepath.Base(file) // Get the short file name from the full path
+	lineNumber = line
+
+	return
 }

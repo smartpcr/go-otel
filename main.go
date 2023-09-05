@@ -39,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	ctx, span, startupLogger := ot.StartSpanLogger(ctx, "startup")
+	ctx, span, startupLogger := ot.StartSpanLogger(ctx)
 	defer span.End()
 	span.AddEvent("test event")
 	startupLogger.Infof("test log")
