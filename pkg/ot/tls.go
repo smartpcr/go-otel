@@ -8,7 +8,7 @@ import (
 )
 
 func getTls() (*tls.Config, error) {
-	clientAuth, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	clientAuth, err := tls.LoadX509KeyPair("./certs/client.crt", "./certs/client.key")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load client key pair")
 	}
