@@ -21,7 +21,7 @@ func getTls() (*tls.Config, error) {
 		return nil, errors.Wrap(err, "failed to load client key pair")
 	}
 
-	caCert, err := os.ReadFile("certs/ca.crt")
+	caCert, err := os.ReadFile("certs/rootCA.crt")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read ca cert")
 	}
